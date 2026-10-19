@@ -111,7 +111,7 @@ fun PeerCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = statusText,
+                    text = "$statusText · ${peer.address.takeLast(8)}",
                     style = MaterialTheme.typography.labelMedium,
                     color = statusColor,
                 )

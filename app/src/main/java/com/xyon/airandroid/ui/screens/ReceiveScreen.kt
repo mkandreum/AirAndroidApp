@@ -85,6 +85,7 @@ fun ReceiveScreen(
     onOpenFile: (HistoryItem) -> Unit,
     onShareFile: (HistoryItem) -> Unit,
     onOpenWifiSettings: () -> Unit,
+    onConfigureNfc: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -284,6 +285,17 @@ fun ReceiveScreen(
                             style = MaterialTheme.typography.labelMedium,
                             color = TextMuted,
                         )
+                    }
+                    if (nfcAvailable && nfcEnabled && !connection.nfcHceReady) {
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = "Para tocar móviles, activa AirAndroid como servicio NFC para \"Otros\" en los ajustes del sistema.",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Warning,
+                        )
+                        TextButton(onClick = onConfigureNfc) {
+                            Text("Configurar NFC", color = Primary)
+                        }
                     }
                 }
             }

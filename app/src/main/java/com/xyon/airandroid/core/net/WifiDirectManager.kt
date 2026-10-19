@@ -36,12 +36,18 @@ class WifiDirectManager(
     private var registered = false
 
     fun start() {
-        if (manager == null) {
+        val mgr = manager
+        if (mgr == null) {
             onEvent(Event.Unsupported)
             return
         }
         if (channel == null) {
-            channel = manager.initialize(context, context.mainLooper, null)
+            runCatching {
+                channel = mgr.initialize(context, context.mainLooper, null)
+            }.onFailure {
+                onEvent(Event.Error("No se pudo inicializar Wi-Fi Direct: ${it.message}"))
+                return
+            }
         }
         if (!registered) {
             val filter = IntentFilter().apply {
@@ -113,12 +119,16 @@ class WifiDirectManager(
             return
         }
         removeGroupInternal {
-            mgr.discoverPeers(chan, object : WifiP2pManager.ActionListener {
-                override fun onSuccess() = Unit
-                override fun onFailure(reason: Int) {
-                    onEvent(Event.Error("No se pudo iniciar la búsqueda (código $reason)"))
-                }
-            })
+            runCatching {
+                mgr.discoverPeers(chan, object : WifiP2pManager.ActionListener {
+                    override fun onSuccess() = Unit
+                    override fun onFailure(reason: Int) {
+                        onEvent(Event.Error("No se pudo iniciar la búsqueda (código $reason)"))
+                    }
+                })
+            }.onFailure {
+                onEvent(Event.Error(permissionHint(it)))
+            }
         }
     }
 
@@ -131,17 +141,25 @@ class WifiDirectManager(
             return
         }
         removeGroupInternal {
-            mgr.createGroup(chan, object : WifiP2pManager.ActionListener {
-                override fun onSuccess() {
-                    mgr.requestGroupInfo(chan) { group ->
-                        onEvent(Event.GroupCreated(group?.networkName))
+            runCatching {
+                mgr.createGroup(chan, object : WifiP2pManager.ActionListener {
+                    override fun onSuccess() {
+                        runCatching {
+                            mgr.requestGroupInfo(chan) { group ->
+                                onEvent(Event.GroupCreated(group?.networkName))
+                            }
+                        }.onFailure {
+                            onEvent(Event.GroupCreated(null))
+                        }
                     }
-                }
 
-                override fun onFailure(reason: Int) {
-                    onEvent(Event.Error("No se pudo crear el grupo Wi-Fi Direct (código $reason)"))
-                }
-            })
+                    override fun onFailure(reason: Int) {
+                        onEvent(Event.Error("No se pudo crear el grupo Wi-Fi Direct (código $reason)"))
+                    }
+                })
+            }.onFailure {
+                onEvent(Event.Error(permissionHint(it)))
+            }
         }
     }
 
@@ -153,16 +171,28 @@ class WifiDirectManager(
             onEvent(Event.Error("Concede el permiso de dispositivos cercanos para conectar"))
             return
         }
+        if (!device.address.matches(MAC_REGEX)) {
+            onEvent(Event.Error("La dirección del dispositivo no es válida"))
+            return
+        }
         val config = WifiP2pConfig().apply {
             deviceAddress = device.address
             groupOwnerIntent = 0
         }
-        mgr.connect(chan, config, object : WifiP2pManager.ActionListener {
-            override fun onSuccess() = Unit
-            override fun onFailure(reason: Int) {
-                onEvent(Event.Error("No se pudo conectar con ${device.displayName} (código $reason)"))
-            }
-        })
+        runCatching {
+            mgr.connect(chan, config, object : WifiP2pManager.ActionListener {
+                override fun onSuccess() = Unit
+                override fun onFailure(reason: Int) {
+                    onEvent(
+                        Event.Error(
+                            "No se pudo conectar con ${device.displayName} (código $reason)",
+                        ),
+                    )
+                }
+            })
+        }.onFailure {
+            onEvent(Event.Error(permissionHint(it)))
+        }
     }
 
     fun removeGroup() {
@@ -174,36 +204,47 @@ class WifiDirectManager(
         val mgr = manager ?: return
         val chan = channel ?: return
         if (!hasPermissions()) return
-        mgr.requestPeers(chan) { deviceList ->
-            val peers = deviceList?.deviceList.orEmpty()
-                .map {
-                    PeerDevice(
-                        name = it.deviceName.orEmpty(),
-                        address = it.deviceAddress.orEmpty(),
-                        status = it.status,
-                        isGroupOwner = it.isGroupOwner,
+        runCatching {
+            mgr.requestPeers(chan) { deviceList ->
+                val peers = deviceList?.deviceList.orEmpty()
+                    .map {
+                        val rawName = it.deviceName.orEmpty().trim()
+                        PeerDevice(
+                            name = rawName.takeUnless { name ->
+                                name.isBlank() || name.equals("<unknown>", true)
+                            }.orEmpty(),
+                            address = it.deviceAddress.orEmpty(),
+                            status = it.status,
+                            isGroupOwner = it.isGroupOwner,
+                        )
+                    }
+                    .filter { it.address.isNotBlank() }
+                    .sortedWith(
+                        compareBy<PeerDevice> { it.status != WifiP2pDevice.AVAILABLE }
+                            .thenBy { it.displayName.lowercase() },
                     )
-                }
-                .filter { it.address.isNotBlank() }
-                .sortedWith(
-                    compareBy<PeerDevice> { it.status != WifiP2pDevice.AVAILABLE }
-                        .thenBy { it.displayName.lowercase() },
-                )
-            onEvent(Event.PeersChanged(peers))
+                onEvent(Event.PeersChanged(peers))
+            }
+        }.onFailure {
+            onEvent(Event.Error(permissionHint(it)))
         }
     }
 
     private fun requestConnectionInfo() {
         val mgr = manager ?: return
         val chan = channel ?: return
-        mgr.requestConnectionInfo(chan) { info ->
-            if (info == null) {
-                onEvent(Event.Disconnected)
-            } else if (info.groupFormed) {
-                onEvent(Event.Connected(info))
-            } else {
-                onEvent(Event.Disconnected)
+        runCatching {
+            mgr.requestConnectionInfo(chan) { info ->
+                if (info == null) {
+                    onEvent(Event.Disconnected)
+                } else if (info.groupFormed) {
+                    onEvent(Event.Connected(info))
+                } else {
+                    onEvent(Event.Disconnected)
+                }
             }
+        }.onFailure {
+            onEvent(Event.Disconnected)
         }
     }
 
@@ -216,9 +257,28 @@ class WifiDirectManager(
             then()
             return
         }
-        mgr.removeGroup(chan, object : WifiP2pManager.ActionListener {
-            override fun onSuccess() = then()
-            override fun onFailure(reason: Int) = then()
-        })
+        runCatching {
+            mgr.removeGroup(chan, object : WifiP2pManager.ActionListener {
+                override fun onSuccess() = then()
+                override fun onFailure(reason: Int) = then()
+            })
+        }.onFailure {
+            then()
+        }
+    }
+
+    private fun permissionHint(error: Throwable): String {
+        val message = error.message.orEmpty()
+        return if (error is SecurityException ||
+            message.contains("permission", ignoreCase = true)
+        ) {
+            "Permiso de Wi-Fi Direct denegado. Revisa los permisos de la app."
+        } else {
+            "Wi-Fi Direct no pudo completar la operación: ${message.ifBlank { "error desconocido" }}"
+        }
+    }
+
+    private companion object {
+        val MAC_REGEX = Regex("([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}")
     }
 }

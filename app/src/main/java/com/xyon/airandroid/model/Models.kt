@@ -16,7 +16,13 @@ data class PeerDevice(
     val isGroupOwner: Boolean = false,
 ) {
     val displayName: String
-        get() = name.ifBlank { address }
+        get() {
+            val cleaned = name.trim()
+            val generic = cleaned.isBlank() ||
+                cleaned.equals("<unknown>", ignoreCase = true) ||
+                cleaned.equals("android", ignoreCase = true)
+            return if (generic) "Android ${address.takeLast(5)}" else cleaned
+        }
 }
 
 data class TransferProgress(
@@ -97,6 +103,7 @@ data class ConnectionState(
     val message: String? = null,
     val nfcAvailable: Boolean = false,
     val nfcEnabled: Boolean = false,
+    val nfcHceReady: Boolean = false,
     val nfcReaderActive: Boolean = false,
 )
 

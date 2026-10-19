@@ -30,6 +30,7 @@ import com.xyon.airandroid.model.TransferDirection
 import com.xyon.airandroid.model.TransferStatus
 import com.xyon.airandroid.model.TransferUiState
 import com.xyon.airandroid.model.UiEvent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -127,6 +128,7 @@ class AirAndroidViewModel(application: Application) : AndroidViewModel(applicati
             it.copy(
                 nfcAvailable = nfcController.hasNfc(),
                 nfcEnabled = nfcController.isEnabled(),
+                nfcHceReady = nfcController.isHceReady(),
             )
         }
     }
@@ -249,7 +251,13 @@ class AirAndroidViewModel(application: Application) : AndroidViewModel(applicati
             launchSend(host, pin, filesSnapshot)
         } else {
             _transfer.value = TransferUiState.Connecting("Conectando con ${peer.displayName}…")
-            wifiDirect.connect(peer)
+            runCatching {
+                wifiDirect.connect(peer)
+            }.onFailure { error ->
+                val message = error.message ?: "No se pudo iniciar la conexión"
+                _transfer.value = TransferUiState.Failed(message)
+                emit(UiEvent.Message(message))
+            }
         }
     }
 
@@ -443,7 +451,11 @@ class AirAndroidViewModel(application: Application) : AndroidViewModel(applicati
         }
         val match = _peers.value.firstOrNull { namesMatch(it.displayName, pairing.deviceName) }
         if (match != null) {
-            selectPeer(match)
+            val updated = match.copy(name = pairing.deviceName)
+            _peers.value = _peers.value.map {
+                if (it.address == match.address) updated else it
+            }
+            selectPeer(updated)
             nfcTargetName = null
         }
         emit(UiEvent.Message("Código leído por NFC. Elige el móvil y pulsa Enviar."))
@@ -452,14 +464,23 @@ class AirAndroidViewModel(application: Application) : AndroidViewModel(applicati
     private fun launchSend(host: InetAddress, pin: String, files: List<SelectedFile>) {
         sendJob?.cancel()
         sendJob = viewModelScope.launch {
-            _transfer.value = TransferUiState.Connecting("Conectado. Preparando envío…")
-            val result = transferClient.send(
+            try {
+                _transfer.value = TransferUiState.Connecting("Conectado. Preparando envío…")
+                val result = transferClient.send(
                 host = host,
                 pin = pin,
                 deviceName = _settings.value.deviceName,
                 files = files,
                 onConnected = { peerName ->
                     _connection.update { it.copy(connectedPeerName = peerName) }
+                    val selected = _selectedPeer.value
+                    if (selected != null) {
+                        val updated = selected.copy(name = peerName)
+                        _selectedPeer.value = updated
+                        _peers.value = _peers.value.map {
+                            if (it.address == selected.address) updated else it
+                        }
+                    }
                 },
                 onProgress = { progress ->
                     _transfer.value = TransferUiState.Sending(progress)
@@ -491,8 +512,15 @@ class AirAndroidViewModel(application: Application) : AndroidViewModel(applicati
                 )
                 _files.value = emptyList()
                 emit(UiEvent.TransferCompleted)
-            } else {
-                val message = result.message ?: "No se pudo completar el envío"
+                } else {
+                    val message = result.message ?: "No se pudo completar el envío"
+                    _transfer.value = TransferUiState.Failed(message)
+                    emit(UiEvent.Message(message))
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                val message = error.message ?: "Error inesperado durante el envío"
                 _transfer.value = TransferUiState.Failed(message)
                 emit(UiEvent.Message(message))
             }
@@ -628,6 +656,9 @@ class AirAndroidViewModel(application: Application) : AndroidViewModel(applicati
             is WifiDirectManager.Event.Error -> {
                 _scanning.value = false
                 _connection.update { it.copy(message = event.message) }
+                if (_transfer.value is TransferUiState.Connecting) {
+                    _transfer.value = TransferUiState.Failed(event.message)
+                }
                 emit(UiEvent.Message(event.message))
             }
         }

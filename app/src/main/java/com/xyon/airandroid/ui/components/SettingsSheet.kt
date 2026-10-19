@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Nfc
@@ -59,6 +60,8 @@ fun SettingsSheet(
     onSaveName: (String) -> Unit,
     onOpenWifiSettings: () -> Unit,
     onOpenNfcSettings: () -> Unit,
+    diagnosticsAvailable: Boolean,
+    onShareDiagnostics: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -190,6 +193,15 @@ fun SettingsSheet(
                 icon = Icons.Rounded.Wifi,
                 modifier = Modifier.fillMaxWidth(),
             )
+
+            if (diagnosticsAvailable) {
+                SecondaryActionButton(
+                    text = "Compartir último error",
+                    onClick = onShareDiagnostics,
+                    icon = Icons.Rounded.BugReport,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
 
             Spacer(Modifier.height(4.dp))
             Text(

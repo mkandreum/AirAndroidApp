@@ -1,12 +1,14 @@
 package com.xyon.airandroid.core.nfc
 
 import android.app.Activity
+import android.content.ComponentName
 import android.content.Context
 import android.nfc.NdefMessage
 import android.nfc.NdefRecord
 import android.nfc.NfcAdapter
 import android.nfc.NfcManager
 import android.nfc.Tag
+import android.nfc.cardemulation.CardEmulation
 import android.nfc.tech.IsoDep
 import android.nfc.tech.Ndef
 import android.nfc.tech.NdefFormatable
@@ -38,6 +40,17 @@ class NfcController(context: Context) {
     fun hasNfc(): Boolean = adapter != null
 
     fun isEnabled(): Boolean = adapter?.isEnabled == true
+
+    fun isHceReady(): Boolean {
+        val nfc = adapter ?: return false
+        return runCatching {
+            val cardEmulation = CardEmulation.getInstance(nfc)
+            cardEmulation.isDefaultServiceForAid(
+                ComponentName(appContext, AirAndroidHceService::class.java),
+                AirAndroidHceService.AID_HEX,
+            )
+        }.getOrDefault(false)
+    }
 
     fun isReaderActive(): Boolean = activity != null && callback != null
 

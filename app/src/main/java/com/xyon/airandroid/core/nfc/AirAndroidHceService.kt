@@ -16,7 +16,7 @@ class AirAndroidHceService : HostApduService() {
             return STATUS_OK
         }
 
-        if (selected && isGetData(commandApdu)) {
+        if (isGetData(commandApdu)) {
             val pairing = NfcPairingStore.pairing
             if (pairing == null) {
                 selected = false
@@ -40,7 +40,8 @@ class AirAndroidHceService : HostApduService() {
         if (apdu[0] != 0x00.toByte() || apdu[1] != 0xA4.toByte()) return false
         if (apdu[2] != 0x04.toByte() || apdu[3] != 0x00.toByte()) return false
         val length = apdu[4].toInt() and 0xFF
-        if (length != AID.size) return false
+        if (length < AID.size) return false
+        if (apdu.size < 5 + length) return false
         for (index in AID.indices) {
             if (apdu[5 + index] != AID[index]) return false
         }
@@ -62,6 +63,7 @@ class AirAndroidHceService : HostApduService() {
         val GET_DATA: ByteArray = byteArrayOf(0x00, 0xCA.toByte(), 0x00, 0x00, 0x00)
         val STATUS_OK = byteArrayOf(0x90.toByte(), 0x00)
         val STATUS_NOT_FOUND = byteArrayOf(0x6A, 0x82.toByte())
+        const val AID_HEX = "F04149524E44524F4944"
         const val MIME_TYPE = "application/vnd.xyon.airandroid.pair"
     }
 }

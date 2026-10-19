@@ -1,7 +1,9 @@
 package com.xyon.airandroid.ui
 
+import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
+import android.nfc.cardemulation.CardEmulation
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -42,7 +44,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.xyon.airandroid.core.nfc.AirAndroidHceService
 import com.xyon.airandroid.model.HistoryItem
 import com.xyon.airandroid.model.TransferUiState
 import com.xyon.airandroid.model.UiEvent
@@ -66,6 +70,7 @@ import com.xyon.airandroid.util.rememberHaptics
 import com.xyon.airandroid.util.requiredWifiPermissions
 import com.xyon.airandroid.util.shareFile
 import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 fun AirAndroidApp(viewModel: AirAndroidViewModel) {
@@ -279,6 +284,29 @@ fun AirAndroidApp(viewModel: AirAndroidViewModel) {
                                 context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
                             }
                         },
+                        onConfigureNfc = {
+                            val intent = Intent(CardEmulation.ACTION_CHANGE_DEFAULT).apply {
+                                putExtra(
+                                    CardEmulation.EXTRA_CATEGORY,
+                                    CardEmulation.CATEGORY_OTHER,
+                                )
+                                putExtra(
+                                    CardEmulation.EXTRA_SERVICE_COMPONENT,
+                                    ComponentName(
+                                        context,
+                                        AirAndroidHceService::class.java,
+                                    ).flattenToString(),
+                                )
+                            }
+                            if (!runCatching { context.startActivity(intent) }.isSuccess) {
+                                haptics.reject()
+                                scope.launch {
+                                    snackbar.showSnackbar(
+                                        "Abre Ajustes > NFC > Otros y selecciona AirAndroid",
+                                    )
+                                }
+                            }
+                        },
                         onOpenSettings = { showSettings = true },
                     )
 
@@ -305,6 +333,24 @@ fun AirAndroidApp(viewModel: AirAndroidViewModel) {
             },
             onOpenNfcSettings = {
                 runCatching { context.startActivity(Intent(Settings.ACTION_NFC_SETTINGS)) }
+            },
+            diagnosticsAvailable = File(context.filesDir, "last_crash.txt").exists(),
+            onShareDiagnostics = {
+                val file = File(context.filesDir, "last_crash.txt")
+                if (file.exists()) {
+                    runCatching {
+                        val uri = FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.files",
+                            file,
+                        )
+                        shareFile(context, uri.toString(), "airandroid-crash.txt")
+                    }.onFailure {
+                        scope.launch {
+                            snackbar.showSnackbar("No se pudo compartir el diagnóstico")
+                        }
+                    }
+                }
             },
             onDismiss = { showSettings = false },
         )
