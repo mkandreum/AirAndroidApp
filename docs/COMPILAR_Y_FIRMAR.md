@@ -71,7 +71,7 @@ El script:
 Salida:
 
 ```
-dist/AirAndroid-1.0.3-release.apk
+dist/AirAndroid-1.0.4-release.apk
 ```
 
 ### Variables de entorno opcionales
@@ -88,9 +88,9 @@ BUILD_TOOLS=$HOME/Android/Sdk/build-tools/36.0.0
 
 ```bash
 apksigner verify --verbose --print-certs \
-  dist/AirAndroid-1.0.3-release.apk
+  dist/AirAndroid-1.0.4-release.apk
 
-aapt dump badging dist/AirAndroid-1.0.3-release.apk | grep -E \
+aapt dump badging dist/AirAndroid-1.0.4-release.apk | grep -E \
   "package:|sdkVersion|targetSdkVersion|application-debuggable"
 ```
 

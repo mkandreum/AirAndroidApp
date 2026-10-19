@@ -1,21 +1,25 @@
 package com.xyon.airandroid.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -31,10 +35,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.xyon.airandroid.ui.AppTab
-import com.xyon.airandroid.ui.theme.Border
-import com.xyon.airandroid.ui.theme.Glass
 import com.xyon.airandroid.ui.theme.Primary
-import com.xyon.airandroid.ui.theme.TextSecondary
+import com.xyon.airandroid.ui.theme.TextMuted
 import com.xyon.airandroid.util.rememberHaptics
 
 @Composable
@@ -47,25 +49,28 @@ fun GlassBottomBar(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 18.dp, vertical = 10.dp),
+            .padding(bottom = 8.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(66.dp)
-                .clip(RoundedCornerShape(33.dp))
-                .background(Glass)
-                .border(1.dp, Border, RoundedCornerShape(33.dp))
-                .padding(horizontal = 6.dp),
+                .animateContentSize(
+                    animationSpec = spring(
+                        dampingRatio = 0.78f,
+                        stiffness = 520f,
+                    ),
+                )
+                .clip(RoundedCornerShape(28.dp))
+                .background(Color(0xCC0D0D0D))
+                .padding(horizontal = 6.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             AppTab.entries.forEach { tab ->
                 BottomBarItem(
                     tab = tab,
                     selected = tab == current,
                     onClick = { onSelect(tab) },
-                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -77,29 +82,27 @@ private fun BottomBarItem(
     tab: AppTab,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val haptics = rememberHaptics()
     val background by animateColorAsState(
-        targetValue = if (selected) Primary.copy(alpha = 0.13f) else Color.Transparent,
+        targetValue = if (selected) Primary.copy(alpha = 0.2f) else Color.Transparent,
         animationSpec = tween(200),
-        label = "tabBackground",
+        label = "pillBg_${tab.name}",
     )
     val contentColor by animateColorAsState(
-        targetValue = if (selected) Primary else TextSecondary,
+        targetValue = if (selected) Primary else TextMuted,
         animationSpec = tween(200),
-        label = "tabContent",
+        label = "pillFg_${tab.name}",
     )
-    val scale by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.92f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 600f),
-        label = "tabScale",
+    val iconScale by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.94f,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = 620f),
+        label = "pillIcon_${tab.name}",
     )
 
-    Box(
-        modifier = modifier
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(27.dp))
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(22.dp))
             .background(background)
             .selectable(
                 selected = selected,
@@ -108,29 +111,35 @@ private fun BottomBarItem(
                     onClick()
                 },
                 role = Role.Tab,
-            ),
-        contentAlignment = Alignment.Center,
+            )
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(5.dp),
+        Icon(
+            imageVector = tab.icon,
+            contentDescription = tab.label,
+            tint = contentColor,
+            modifier = Modifier
+                .size(22.dp)
+                .graphicsLayer {
+                    scaleX = iconScale
+                    scaleY = iconScale
+                },
+        )
+        AnimatedVisibility(
+            visible = selected,
+            enter = fadeIn(tween(160)) + expandHorizontally(tween(180)),
+            exit = fadeOut(tween(120)) + shrinkHorizontally(tween(160)),
         ) {
-            Icon(
-                imageVector = tab.icon,
-                contentDescription = tab.label,
-                tint = contentColor,
-                modifier = Modifier
-                    .size(22.dp)
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    },
-            )
-            Text(
-                text = tab.label,
-                style = MaterialTheme.typography.labelMedium,
-                color = contentColor,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = tab.label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = contentColor,
+                )
+            }
         }
     }
 }

@@ -118,7 +118,7 @@ chmod 600 ~/.android/airandroid/*
 ./scripts/build-release.sh
 ```
 
-El script deja el APK en `dist/AirAndroid-1.0.3-release.apk`. Más detalle en [docs/COMPILAR_Y_FIRMAR.md](docs/COMPILAR_Y_FIRMAR.md).
+El script deja el APK en `dist/AirAndroid-1.0.4-release.apk`. Más detalle en [docs/COMPILAR_Y_FIRMAR.md](docs/COMPILAR_Y_FIRMAR.md).
 
 ## Pruebas
 
