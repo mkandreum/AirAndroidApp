@@ -1,16 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path
-        android:fillColor="#3DDC84"
-        android:pathData="M54,24a30,30 0,1 0,0 60a30,30 0,1 0,0 -60z" />
-    <path
-        android:fillColor="#0D0D0D"
-        android:pathData="M32,52.5L78,34L65.5,74.5L53.5,62.5L47.5,72.5L46.5,56.5Z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M34,53.5L75.5,36.5L64.5,71L54,60.5L48.2,69.5L47.5,57.5Z" />
+<vector android:height="108.0dip" android:width="108.0dip" android:viewportWidth="108.0" android:viewportHeight="108.0"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt">
+    <path android:fillColor="@drawable/ic_launcher_foreground__0" android:pathData="M24,54a30,30 0 1,0 60,0a30,30 0 1,0 -60,0" />
+    <path android:fillColor="#00000000" android:pathData="M 32,36 C 42,26 66,26 76,36" android:strokeColor="#403b82f6" android:strokeWidth="2.0" android:strokeLineCap="round" />
+    <path android:fillColor="#00000000" android:pathData="M 40,30 C 46,24 62,24 68,30" android:strokeColor="#803b82f6" android:strokeWidth="1.5" android:strokeLineCap="round" />
+    <path android:fillColor="@drawable/ic_launcher_foreground__1" android:pathData="M 50,70 L 54,92 L 58,70 Z" />
+    <path android:fillColor="@drawable/ic_launcher_foreground__2" android:pathData="M 54,24 L 22,82 L 34,82 L 54,44 L 74,82 L 86,82 Z" />
+    <path android:fillColor="@drawable/ic_launcher_foreground__3" android:pathData="M 54,28 L 50,45 L 14,66 L 47,66 L 49,74 L 54,70 L 59,74 L 61,66 L 94,66 L 58,45 Z" android:strokeColor="#80ffffff" android:strokeWidth="0.8" />
+    <path android:fillColor="@drawable/ic_launcher_foreground__4" android:pathData="M 54,28 L 52,45 L 54,54 L 56,45 Z" />
 </vector>

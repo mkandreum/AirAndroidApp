@@ -8,7 +8,7 @@ KEYSTORE="${AIRANDROID_KEYSTORE:-$HOME/.android/airandroid/release.jks}"
 STORE_PASS_FILE="${AIRANDROID_STORE_PASS_FILE:-$HOME/.android/airandroid/storepass.txt}"
 KEY_PASS_FILE="${AIRANDROID_KEY_PASS_FILE:-$HOME/.android/airandroid/keypass.txt}"
 KEY_ALIAS="${AIRANDROID_KEY_ALIAS:-airandroid}"
-VERSION="1.0.2"
+VERSION="1.0.3"
 
 cd "$ROOT"
 mkdir -p dist
