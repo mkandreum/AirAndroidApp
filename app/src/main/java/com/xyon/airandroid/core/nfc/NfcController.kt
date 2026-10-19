@@ -24,8 +24,9 @@ class NfcController(context: Context) {
     enum class Mode { READ, WRITE }
 
     private val appContext = context.applicationContext
-    private val adapter: NfcAdapter? =
+    private val adapter: NfcAdapter? = runCatching {
         (appContext.getSystemService(Context.NFC_SERVICE) as? NfcManager)?.defaultAdapter
+    }.getOrNull()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val handling = AtomicBoolean(false)
 
@@ -39,7 +40,9 @@ class NfcController(context: Context) {
 
     fun hasNfc(): Boolean = adapter != null
 
-    fun isEnabled(): Boolean = adapter?.isEnabled == true
+    fun isEnabled(): Boolean = runCatching {
+        adapter?.isEnabled == true
+    }.getOrDefault(false)
 
     fun isHceReady(): Boolean {
         val nfc = adapter ?: return false
@@ -67,8 +70,8 @@ class NfcController(context: Context) {
             onError("Este móvil no tiene NFC")
             return
         }
-        if (!nfc.isEnabled) {
-            onError("Activa NFC en los ajustes del móvil")
+        if (!isEnabled()) {
+            onError("NFC no disponible. Actívalo o reinicia el móvil si el servicio se ha detenido.")
             return
         }
         stopReader()
