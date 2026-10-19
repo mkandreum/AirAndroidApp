@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AirAndroid</string>
+    <string name="nfc_service_description">Emparejamiento seguro de AirAndroid</string>
+    <string name="nfc_aid_group">AirAndroid</string>
+</resources>
