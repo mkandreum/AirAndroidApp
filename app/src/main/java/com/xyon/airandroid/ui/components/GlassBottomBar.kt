@@ -61,7 +61,7 @@ fun GlassBottomBar(
                     ),
                 )
                 .clip(RoundedCornerShape(28.dp))
-                .background(Color(0xCC0D0D0D))
+                .background(Color(0xFF0D0D0D))
                 .padding(horizontal = 6.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),

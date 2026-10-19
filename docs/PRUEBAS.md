@@ -29,8 +29,8 @@
 ## Verificación del APK
 
 ```bash
-apksigner verify --verbose --print-certs dist/AirAndroid-1.0.4-release.apk
-aapt dump badging dist/AirAndroid-1.0.4-release.apk
+apksigner verify --verbose --print-certs dist/AirAndroid-1.0.6-release.apk
+aapt dump badging dist/AirAndroid-1.0.6-release.apk
 ```
 
 Comprobar:

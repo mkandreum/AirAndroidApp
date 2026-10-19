@@ -189,7 +189,7 @@ fun AirAndroidApp(viewModel: AirAndroidViewModel) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(top = innerPadding.calculateTopPadding())
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(Surface, Surface, Color(0xFF050505)),
